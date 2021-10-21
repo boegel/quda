@@ -205,12 +205,12 @@ void create_solver_state(void **host_source_, void**host_guess_, QudaInvertParam
 		   inv_param->solve_type == QUDA_NORMOP_PC_SOLVE ||
 		   inv_param->solve_type == QUDA_NORMERR_PC_SOLVE);
   
-  QudaSolutionType sol_type;
+  QudaSolutionType sol_type = QUDA_INVALID_SOLUTION;
   if(pc_solve) {
     if(inv_param->solve_type == QUDA_NORMOP_PC_SOLVE ||
        inv_param->solve_type == QUDA_NORMERR_PC_SOLVE ||
        inv_param->solve_type == QUDA_DIRECT_PC_SOLVE) sol_type = QUDA_MATPC_SOLUTION;
-  } else { 
+  } else {
     if(inv_param->solve_type == QUDA_NORMOP_SOLVE ||
        inv_param->solve_type == QUDA_NORMERR_SOLVE ||
        inv_param->solve_type == QUDA_DIRECT_SOLVE) sol_type = QUDA_MAT_SOLUTION;
@@ -2725,7 +2725,7 @@ void deflateQuda(void **host_source, void **host_guess, QudaEigParam *eig_param,
   bool pc_solve = (inv_param->solve_type == QUDA_DIRECT_PC_SOLVE) || (inv_param->solve_type == QUDA_NORMOP_PC_SOLVE)
     || (inv_param->solve_type == QUDA_NORMERR_PC_SOLVE);
 
-  QudaSolutionType sol_type;
+  QudaSolutionType sol_type = QUDA_INVALID_SOLUTION;
   if(pc_solve) {
     if(inv_param->solve_type == QUDA_NORMOP_PC_SOLVE ||
        inv_param->solve_type == QUDA_NORMERR_PC_SOLVE ||
@@ -2734,7 +2734,7 @@ void deflateQuda(void **host_source, void **host_guess, QudaEigParam *eig_param,
     if(inv_param->solve_type == QUDA_NORMOP_SOLVE ||
        inv_param->solve_type == QUDA_NORMERR_SOLVE ||
        inv_param->solve_type == QUDA_DIRECT_SOLVE) sol_type = QUDA_MAT_SOLUTION;
-  }  
+  }
   
   // Define the problem matrix and create a deflation space
   //-------------------------------------------------------
@@ -3862,16 +3862,17 @@ void callMultiSrcQuda(void **_hp_x, void **_hp_b, QudaInvertParam *param, // col
       gauge_param->ga_pad *= split_key[d];
     }
 
-    // Deal with clover field. For Multi source computatons, clover field construction is done
-    // exclusively on the GPU.
-    if (param->clover_coeff == 0.0 && param->clover_csw == 0.0)
-      errorQuda("called with neither clover term nor inverse and clover coefficient nor Csw not set");
-    if (gaugePrecise->Anisotropy() != 1.0) errorQuda("cannot compute anisotropic clover field");
-
     quda::CloverField *input_clover = nullptr;
     quda::CloverField *collected_clover = nullptr;
     if (param->dslash_type == QUDA_CLOVER_WILSON_DSLASH || param->dslash_type == QUDA_TWISTED_CLOVER_DSLASH
         || param->dslash_type == QUDA_CLOVER_HASENBUSCH_TWIST_DSLASH) {
+      
+      // Deal with clover field. For Multi source computatons, clover field construction is done
+      // exclusively on the GPU.
+      if (param->clover_coeff == 0.0 && param->clover_csw == 0.0)
+	errorQuda("called with neither clover term nor inverse and clover coefficient nor Csw not set");
+      if (gaugePrecise->Anisotropy() != 1.0) errorQuda("cannot compute anisotropic clover field");
+      
       if (h_clover || h_clovinv) {
         CloverFieldParam clover_param;
         clover_param.nDim = 4;
